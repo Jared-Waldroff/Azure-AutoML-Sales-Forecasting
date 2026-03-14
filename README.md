@@ -15,15 +15,17 @@ Every retail leadership team needs this. This project delivers it by:
 
 ```
 Kaggle Dataset → Python ETL → Star Schema → Azure AutoML → Online Endpoint
-                                    ↓                            ↓
-                               Power BI ← ← ← ← ← fact_forecasts
+                                    ↓              ↓              ↓
+                               Power BI ← ← fact_forecasts ← ← ←┘
+                                    ↑
+                            Local GPU Training (LightGBM)
 ```
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
 | Data Processing | Python (Pandas) | ETL, feature engineering, star schema |
-| ML Training | Azure AutoML (SDK v2) | Time-series forecasting (50 model trials) |
-| Model Serving | Managed Online Endpoint | REST API for real-time predictions |
+| ML Training (Cloud) | Azure AutoML (SDK v2) | Time-series forecasting (20 model trials) |
+| ML Training (Local) | LightGBM, XGBoost, RF, ElasticNet | GPU-accelerated local training |
 | Visualization | Power BI Desktop | Interactive dashboard with DAX |
 | Data Model | Star Schema | dim_date, dim_store, dim_product → fact tables |
 
@@ -41,38 +43,79 @@ For detailed architecture diagrams, see [docs/architecture.md](docs/architecture
 | Product families | 33 (grouped into 11 categories) |
 | External features | Oil prices, holidays, promotions |
 
-## Azure AutoML Configuration
+## Model Training Results
 
-| Setting | Value | Rationale |
-|---------|-------|-----------|
-| Primary metric | Normalized RMSE | Scale-independent across product families |
-| Forecast horizon | 90 days | Covers 30/60/90 day planning windows |
-| Time series ID | store_nbr × family | 1,782 unique series |
-| Max trials | 50 | Thorough model search |
-| Compute | Standard_DS3_v2 (0→4 nodes) | Cost-optimized auto-scaling |
-| Models tried | LightGBM, XGBoost, Prophet, ARIMA, TCN, ElasticNet, etc. | Full spectrum |
+This project was trained two ways: on Azure AutoML (cloud) and locally with GPU acceleration. Both produced real predictions on the full 3M row dataset.
 
-### Why the Winner Won
+### Azure AutoML Results
 
-LightGBM typically dominates retail forecasting because it:
-- Handles mixed features (categorical stores + numerical prices) natively
-- Captures non-linear relationships (promotion diminishing returns)
-- Trains 10-100x faster than deep learning, allowing more iterations
-- Handles missing values internally
+Trained using Azure ML SDK v2 with serverless compute. AutoML evaluated 20 models automatically.
 
-See [docs/model_selection.md](docs/model_selection.md) for the full leaderboard analysis.
+| Rank | Model | Normalized RMSE | Notes |
+|------|-------|----------------|-------|
+| 1 | **Prophet** | **0.0633** | Best on Azure — strong at capturing seasonality |
+| 2 | Exponential Smoothing | 0.0641 | Classical time-series approach |
+| 3 | Voting Ensemble | 0.0645 | Blend of top models |
+| 4 | XGBoost | 0.0658 | Gradient boosting |
+| 5 | LightGBM | 0.0672 | Fast tree-based |
 
-### Feature Importance
+Azure AutoML used time-series cross-validation with rolling origin, which produces more conservative (higher) NRMSE scores than a single train/test split.
+
+### Local GPU Training Results
+
+Trained on 3M rows using LightGBM, XGBoost, RandomForest, and ElasticNet with a time-based 90-day holdout split.
+
+| Rank | Model | Normalized RMSE | R² | RMSE | MAE | Training Time |
+|------|-------|----------------|-----|------|-----|---------------|
+| 1 | **LightGBM** | **0.0092** | **0.9707** | 227.48 | 71.28 | 53s |
+| 2 | XGBoost | 0.0094 | 0.9695 | 232.11 | 73.60 | 6s |
+| 3 | RandomForest | 0.0100 | 0.9651 | 248.36 | 71.08 | 228s |
+| 4 | ElasticNet | 0.0423 | 0.3798 | 1046.90 | 476.62 | 45s |
+
+LightGBM won locally with R² = 0.97 — the model explains 97% of variance in daily sales.
+
+### Why Different Winners?
+
+Azure AutoML's Prophet won under time-series cross-validation (3-fold rolling origin), which tests generalization across multiple time periods. LightGBM won locally on a single 90-day holdout split, where it excels at fitting specific patterns. Both are valid — Prophet generalizes better, LightGBM fits tighter on known patterns.
+
+### Model Leaderboard
+
+![Model Leaderboard](screenshots/automl_leaderboard.png)
+
+### Feature Importance (LightGBM)
+
+![Feature Importance](screenshots/feature_importance.png)
 
 | Feature | Importance | Business Insight |
 |---------|-----------|-----------------|
-| Promotions | ~23% | Biggest controllable lever |
-| Day of week | ~18% | Strong weekly seasonality |
-| Oil price | ~14% | Ecuador's economy tracks oil |
-| Month | ~12% | Year-round seasonal patterns |
-| Transactions | ~10% | Foot traffic drives volume |
+| Product family | 22.4% | Category is the strongest sales predictor |
+| Transactions | 13.1% | Foot traffic drives volume |
+| Promotions | 9.7% | Biggest controllable lever |
+| Store number | 8.7% | Location matters |
+| Week of year | 5.7% | Seasonal patterns |
+| Oil price | 5.1% | Ecuador's economy tracks oil |
+
+### Model Validation: Actuals vs Predictions
+
+The model was validated on a 90-day holdout set (May-Aug 2017). R² = 0.94 at the daily aggregate level — the model closely tracks actual sales patterns.
+
+![Model Validation](screenshots/forecast_vs_actuals.png)
+
+### 90-Day Revenue Forecast
+
+The trained LightGBM model generates real predictions for the next 90 days beyond the last known data. The forecast assumes no future promotions and static oil prices, producing a conservative but realistic projection.
+
+![2017 Revenue + Forecast](screenshots/forecast_vs_actuals_2017.png)
+
+### Residual Analysis
+
+![Residual Analysis](screenshots/residual_analysis.png)
 
 ## Power BI Dashboard
+
+![Power BI Dashboard](screenshots/dashboard_page_1.png)
+
+The dashboard shows 2017 historical revenue transitioning into the 90-day LightGBM forecast, YTD revenue ($632M), YoY growth (26.35%), and revenue breakdown by product category. Built with a star schema data model, DAX measures, and Row-Level Security.
 
 ### Data Model (Star Schema)
 
@@ -87,14 +130,33 @@ dim_product ───┤
 
 | Measure | DAX Pattern | Purpose |
 |---------|------------|---------|
+| Total Revenue | `SUM` | Base revenue aggregation |
 | YoY Growth | `SAMEPERIODLASTYEAR` | Year-over-year comparison |
-| Running Total | `TOTALYTD` | Year-to-date accumulation |
-| MAPE | `SUMX` + `ABS` | Forecast accuracy (actual vs predicted) |
+| Revenue YTD | `TOTALYTD` | Year-to-date accumulation |
+| Forecasted Revenue | `SUM` | ML prediction aggregation |
+| Forecast Variance | `DIVIDE` | Actual vs predicted gap |
+| MAPE | `SUMX` + `ABS` | Forecast accuracy |
 | % of Total | `CALCULATE` + `ALL` | Category contribution analysis |
 | Dynamic Toggle | `SWITCH(TRUE(), ...)` | User switches between Revenue/Units/Margin |
 | Conditional Colors | `SWITCH(TRUE(), ...)` | Green/red formatting based on growth |
 
 All measures use `VAR/RETURN` for clean, debuggable DAX. Full code and explanations in [powerbi/dax_measures.md](powerbi/dax_measures.md).
+
+### DAX Query View
+
+Custom DAX queries for ad-hoc analysis, demonstrating DAX proficiency beyond pre-built measures:
+
+**Top 10 Product Families by Revenue:**
+
+![DAX Query — Revenue by Family](screenshots/dax_query_revenue_by_family.png)
+
+**Monthly Revenue Trend (2017):**
+
+![DAX Query — Monthly Revenue](screenshots/dax_query_monthly_revenue.png)
+
+**Forecast Revenue by City:**
+
+![DAX Query — Forecast by City](screenshots/dax_query_forecast_by_city.png)
 
 ### Row-Level Security
 
@@ -112,6 +174,8 @@ Setup guide: [powerbi/rls_setup.md](powerbi/rls_setup.md).
 │   ├── raw/                    # Kaggle CSVs (not in git)
 │   ├── processed/              # Star schema tables
 │   └── output/                 # Forecasts and evaluation results
+├── models/
+│   └── lightgbm_model.joblib   # Trained LightGBM model
 ├── notebooks/
 │   ├── 01_data_exploration     # EDA and data quality
 │   ├── 02_data_preparation     # ETL pipeline walkthrough
@@ -120,7 +184,8 @@ Setup guide: [powerbi/rls_setup.md](powerbi/rls_setup.md).
 │   └── 05_endpoint_scoring     # Deployment and forecast generation
 ├── src/
 │   ├── data_prep.py            # Data download, clean, star schema
-│   ├── automl_train.py         # AutoML configuration and submission
+│   ├── automl_train.py         # Azure AutoML configuration and submission
+│   ├── train_local.py          # Local GPU training (LightGBM, XGBoost, RF, ElasticNet)
 │   ├── model_evaluate.py       # Metrics, charts, feature importance
 │   ├── deploy_endpoint.py      # Model deployment to endpoint
 │   └── score_forecasts.py      # Score 90-day predictions
@@ -133,7 +198,7 @@ Setup guide: [powerbi/rls_setup.md](powerbi/rls_setup.md).
 │   ├── architecture.md         # System architecture diagrams
 │   ├── model_selection.md      # AutoML leaderboard analysis
 │   └── employer_talking_points.md
-├── screenshots/                # Dashboard and leaderboard images
+├── screenshots/                # Dashboard, leaderboard, DAX query images
 ├── .env.template               # Azure config (copy to .env)
 ├── requirements.txt            # Python dependencies
 └── README.md
@@ -143,50 +208,48 @@ Setup guide: [powerbi/rls_setup.md](powerbi/rls_setup.md).
 
 ### Prerequisites
 - Python 3.9+
-- Azure subscription with ML workspace
 - Power BI Desktop (Windows)
 - Kaggle account (for data download)
+- Azure subscription (optional — for cloud training)
 
-### Setup
+### Local Training (no Azure needed)
 
 ```bash
 # 1. Clone and setup
-git clone <repo-url>
-cd Azure-AutoML
+git clone https://github.com/Jared-Waldroff/Azure-AutoML-Sales-Forecasting.git
+cd Azure-AutoML-Sales-Forecasting
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
-# 2. Configure Azure credentials
-cp .env.template .env
-# Edit .env with your Azure subscription details
-
-# 3. Authenticate with Azure
-az login
-
-# 4. Download and prepare data
+# 2. Download and prepare data
 python src/data_prep.py
 
-# 5. Train the model (takes ~2 hours)
-python src/automl_train.py
+# 3. Train models locally (~5 minutes)
+python src/train_local.py
 
-# 6. Evaluate results
-python src/model_evaluate.py --job-name <job-name-from-step-5>
-
-# 7. Deploy and score
-python src/deploy_endpoint.py --job-name <job-name-from-step-5>
-python src/score_forecasts.py
-
-# 8. Import into Power BI
+# 4. Import into Power BI
 # Open Power BI Desktop → follow powerbi/data_model.md
 ```
 
-### Demo Mode (no Azure needed)
+### Azure AutoML Training
 
 ```bash
-# Generate synthetic forecasts for Power BI development
-python src/data_prep.py --skip-download  # Requires Kaggle data in data/raw/
-python src/model_evaluate.py --demo       # Generate sample charts
-python src/score_forecasts.py --demo      # Generate synthetic forecasts
+# 1. Configure Azure credentials
+cp .env.template .env
+# Edit .env with your Azure subscription details
+
+# 2. Authenticate with Azure
+az login
+
+# 3. Train via Azure AutoML (~2 hours)
+python src/automl_train.py
+
+# 4. Evaluate results
+python src/model_evaluate.py --job-name <job-name-from-step-3>
+
+# 5. Deploy and score
+python src/deploy_endpoint.py --job-name <job-name-from-step-3>
+python src/score_forecasts.py
 ```
 
 ## Key Design Decisions
@@ -194,22 +257,11 @@ python src/score_forecasts.py --demo      # Generate synthetic forecasts
 | Decision | Choice | Why |
 |----------|--------|-----|
 | Azure ML SDK version | v2 (azure-ai-ml) | Modern, recommended SDK |
+| Dual training approach | Azure AutoML + local GPU | Cloud for breadth, local for speed |
 | Data format | Parquet + CSV | Parquet for Python (fast), CSV for Power BI |
 | Star schema | Separate fact tables | Actuals and forecasts share dimensions |
-| Compute | Auto-scaling cluster | Scales to 0 when idle (cost optimization) |
 | Metric | Normalized RMSE | Fair comparison across different-scale series |
 | RLS | Region-based | Demonstrates enterprise data governance |
-
-## Cost
-
-| Resource | Cost |
-|----------|------|
-| AutoML training (~2 hours) | ~$2-4 |
-| Endpoint (while deployed) | ~$5.76/day |
-| Storage | < $0.10 |
-| **Total for demo** | **~$8-12** |
-
-**Delete the endpoint after generating forecasts to stop charges.**
 
 ## Documentation
 

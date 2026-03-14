@@ -366,7 +366,7 @@ def evaluate_model(y_true, y_pred, model_name):
         mape = float("nan")
 
     return {
-        "model": model_name,
+        "model_name": model_name,
         "normalized_rmse": norm_rmse,
         "rmse": rmse,
         "mae": mae,
@@ -546,6 +546,10 @@ def score_future_forecasts(best_model, model_name, feature_cols, encoders, df):
     # Build scoring payload
     scoring_df = build_scoring_data(90)
 
+    # Rename store_type back to type to match training schema
+    if "store_type" in scoring_df.columns and "type" not in scoring_df.columns:
+        scoring_df.rename(columns={"store_type": "type"}, inplace=True)
+
     # Encode categoricals the same way as training
     for col, le in encoders.items():
         if col in scoring_df.columns:
@@ -554,11 +558,13 @@ def score_future_forecasts(best_model, model_name, feature_cols, encoders, df):
                 {v: i for i, v in enumerate(le.classes_)}
             ).fillna(0).astype(int)
 
-    # Get feature columns from scoring data
-    available_cols = [c for c in feature_cols if c in scoring_df.columns]
+    # Ensure all feature columns exist, fill missing with 0
+    for col in feature_cols:
+        if col not in scoring_df.columns:
+            scoring_df[col] = 0
 
     # Score with the best model
-    X_score = scoring_df[available_cols].values
+    X_score = scoring_df[feature_cols].values
 
     if model_name == "LightGBM":
         predictions = best_model.predict(X_score)

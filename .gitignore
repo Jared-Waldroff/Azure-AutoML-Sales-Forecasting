@@ -45,6 +45,10 @@ venv/
 .DS_Store
 Thumbs.db
 
+# Models (large binary files)
+models/*.joblib
+models/*.pkl
+
 # Azure ML
 azureml-models/
 outputs/
