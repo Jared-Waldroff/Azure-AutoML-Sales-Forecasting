@@ -33,7 +33,10 @@ OUTPUT_DIR = PROJECT_ROOT / "data" / "output"
 
 @st.cache_data
 def load_data():
-    sales = pd.read_parquet(PROCESSED_DIR / "fact_sales.parquet")
+    sales = pd.read_parquet(
+        PROCESSED_DIR / "fact_sales.parquet",
+        columns=["date_key", "store_key", "product_key", "revenue", "sales", "margin"],
+    )
     forecasts = pd.read_parquet(PROCESSED_DIR / "fact_forecasts.parquet")
     dim_date = pd.read_csv(PROCESSED_DIR / "dim_date.csv")
     dim_store = pd.read_csv(PROCESSED_DIR / "dim_store.csv")
@@ -52,12 +55,12 @@ sales, forecasts, dim_date, dim_store, dim_product, training_results = load_data
 # ============================================================================
 
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("", [
+page = st.sidebar.radio("Page", [
     "Dashboard",
     "Model Results",
     "Forecast Explorer",
     "Data Explorer",
-])
+], label_visibility="collapsed")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Project:** Favorita Store Sales")
