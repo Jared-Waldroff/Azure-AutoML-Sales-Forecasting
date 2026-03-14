@@ -1,35 +1,8 @@
-# ============================================================================
-# Sales Forecasting Project - Python Dependencies
-# ============================================================================
-# Install: pip install -r requirements.txt
-# Recommended: Use a virtual environment first
-#   python -m venv venv && source venv/bin/activate
-# ============================================================================
-
-# --- Azure Machine Learning SDK v2 ---
-# Core SDK for workspace, compute, experiments, endpoints
-azure-ai-ml>=1.12.0
-azure-identity>=1.15.0
-
-# --- Data Processing ---
+streamlit>=1.30.0
 pandas>=2.1.0
 numpy>=1.25.0
-pyarrow>=14.0.0          # Parquet file support for fast I/O
-
-# --- Visualization (for notebooks) ---
-matplotlib>=3.8.0
-seaborn>=0.13.0
-plotly>=5.18.0           # Interactive charts in notebooks
-
-# --- Machine Learning Utilities ---
-scikit-learn>=1.3.0      # Metrics (MAE, RMSE, MAPE)
-
-# --- Kaggle API (optional - for automated data download) ---
-kaggle>=1.6.0
-
-# --- Environment Management ---
-python-dotenv>=1.0.0     # Load .env files
-
-# --- Jupyter ---
-jupyter>=1.0.0
-ipykernel>=6.27.0
+pyarrow>=14.0.0
+plotly>=5.18.0
+scikit-learn>=1.3.0
+lightgbm>=4.0.0
+joblib>=1.3.0
