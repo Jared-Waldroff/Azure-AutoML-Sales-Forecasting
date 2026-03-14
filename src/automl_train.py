@@ -275,6 +275,9 @@ def configure_automl(training_data: Input, compute_name: str) -> automl.Forecast
         "target_column_name": "sales",
         "primary_metric": PRIMARY_METRIC,
         "enable_model_explainability": True,
+        # Time-series forecasting requires either cross-validation or a validation set
+        # 3-fold rolling-origin CV is standard for time-series (respects temporal order)
+        "n_cross_validations": 3,
     }
     if not use_serverless:
         job_kwargs["compute"] = compute_name
@@ -314,7 +317,7 @@ def configure_automl(training_data: Input, compute_name: str) -> automl.Forecast
         timeout_minutes=TIMEOUT_HOURS * 60,    # Max total training time
         trial_timeout_minutes=30,               # Max per individual model
         max_trials=50,                          # Max models to try
-        max_concurrent_trials=4,                # Parallelize across nodes
+        max_concurrent_trials=2,                # Match our 2-node cluster
         enable_early_termination=True,          # Stop bad models early
     )
 
@@ -501,11 +504,10 @@ def main():
     # Execute pipeline
     ml_client = get_ml_client()
 
-    # Use serverless compute — no vCPU quota required
-    # Azure automatically provisions and manages the VMs for you
-    # This is the recommended approach for free-tier subscriptions
-    print("\n  Using serverless compute (no quota required)...")
-    compute_name = "serverless"
+    # Use the existing compute cluster (Standard_D2as_v4, DASv4 family)
+    # This family has quota available on our subscription
+    compute_name = "forecast-cluster"
+    print(f"\n  Using compute cluster: {compute_name}")
 
     training_data = register_training_data(ml_client)
     forecasting_job = configure_automl(training_data, compute_name)
