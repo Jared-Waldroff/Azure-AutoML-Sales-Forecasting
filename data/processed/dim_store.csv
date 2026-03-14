@@ -1,0 +1,55 @@
+store_nbr,city,state,store_type,cluster,store_key,region
+1,Quito,Pichincha,D,13,1,Highland
+2,Quito,Pichincha,D,13,2,Highland
+3,Quito,Pichincha,D,8,3,Highland
+4,Quito,Pichincha,D,9,4,Highland
+5,Santo Domingo,Santo Domingo de los Tsachilas,D,4,5,Coastal
+6,Quito,Pichincha,D,13,6,Highland
+7,Quito,Pichincha,D,8,7,Highland
+8,Quito,Pichincha,D,8,8,Highland
+9,Quito,Pichincha,B,6,9,Highland
+10,Quito,Pichincha,C,15,10,Highland
+11,Cayambe,Pichincha,B,6,11,Highland
+12,Latacunga,Cotopaxi,C,15,12,Highland
+13,Latacunga,Cotopaxi,C,15,13,Highland
+14,Riobamba,Chimborazo,C,7,14,Highland
+15,Ibarra,Imbabura,C,15,15,Highland
+16,Santo Domingo,Santo Domingo de los Tsachilas,C,3,16,Coastal
+17,Quito,Pichincha,C,12,17,Highland
+18,Quito,Pichincha,B,16,18,Highland
+19,Guaranda,Bolivar,C,15,19,Highland
+20,Quito,Pichincha,B,6,20,Highland
+21,Santo Domingo,Santo Domingo de los Tsachilas,B,6,21,Coastal
+22,Puyo,Pastaza,C,7,22,Amazon
+23,Ambato,Tungurahua,D,9,23,Highland
+24,Guayaquil,Guayas,D,1,24,Coastal
+25,Salinas,Santa Elena,D,1,25,Coastal
+26,Guayaquil,Guayas,D,10,26,Coastal
+27,Daule,Guayas,D,1,27,Coastal
+28,Guayaquil,Guayas,E,10,28,Coastal
+29,Guayaquil,Guayas,E,10,29,Coastal
+30,Guayaquil,Guayas,C,3,30,Coastal
+31,Babahoyo,Los Rios,B,10,31,Coastal
+32,Guayaquil,Guayas,C,3,32,Coastal
+33,Quevedo,Los Rios,C,3,33,Coastal
+34,Guayaquil,Guayas,B,6,34,Coastal
+35,Playas,Guayas,C,3,35,Coastal
+36,Libertad,Guayas,E,10,36,Coastal
+37,Cuenca,Azuay,D,2,37,Highland
+38,Loja,Loja,D,4,38,Highland
+39,Cuenca,Azuay,B,6,39,Highland
+40,Machala,El Oro,C,3,40,Coastal
+41,Machala,El Oro,D,4,41,Coastal
+42,Cuenca,Azuay,D,2,42,Highland
+43,Esmeraldas,Esmeraldas,E,10,43,Coastal
+44,Quito,Pichincha,A,5,44,Highland
+45,Quito,Pichincha,A,11,45,Highland
+46,Quito,Pichincha,A,14,46,Highland
+47,Quito,Pichincha,A,14,47,Highland
+48,Quito,Pichincha,A,14,48,Highland
+49,Quito,Pichincha,A,11,49,Highland
+50,Ambato,Tungurahua,A,14,50,Highland
+51,Guayaquil,Guayas,A,17,51,Coastal
+52,Manta,Manabi,A,11,52,Coastal
+53,Manta,Manabi,D,13,53,Coastal
+54,El Carmen,Manabi,C,3,54,Coastal

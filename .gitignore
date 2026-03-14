@@ -6,14 +6,25 @@
 # Data files (too large for git)
 data/raw/*.csv
 data/processed/*.csv
-data/processed/*.parquet
 data/output/*.csv
 data/output/*.parquet
+
+# Allow parquet files for Streamlit Cloud deployment
+!data/processed/fact_sales.parquet
+!data/processed/fact_forecasts.parquet
+
+# Allow small dimension CSVs
+!data/processed/dim_date.csv
+!data/processed/dim_store.csv
+!data/processed/dim_product.csv
 
 # Keep directory structure
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/output/.gitkeep
+
+# Allow training results JSON
+!data/output/training_results.json
 
 # Python
 __pycache__/

@@ -33,8 +33,8 @@ OUTPUT_DIR = PROJECT_ROOT / "data" / "output"
 
 @st.cache_data
 def load_data():
-    sales = pd.read_csv(PROCESSED_DIR / "fact_sales.csv")
-    forecasts = pd.read_csv(PROCESSED_DIR / "fact_forecasts.csv")
+    sales = pd.read_parquet(PROCESSED_DIR / "fact_sales.parquet")
+    forecasts = pd.read_parquet(PROCESSED_DIR / "fact_forecasts.parquet")
     dim_date = pd.read_csv(PROCESSED_DIR / "dim_date.csv")
     dim_store = pd.read_csv(PROCESSED_DIR / "dim_store.csv")
     dim_product = pd.read_csv(PROCESSED_DIR / "dim_product.csv")
