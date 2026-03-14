@@ -1,0 +1,51 @@
+# Environment & Secrets
+.env
+*.pem
+*.key
+
+# Data files (too large for git)
+data/raw/*.csv
+data/processed/*.csv
+data/processed/*.parquet
+data/output/*.csv
+data/output/*.parquet
+
+# Keep directory structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/output/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_metadata
+
+# Power BI
+# Include .pbix for portfolio purposes
+# *.pbix
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Azure ML
+azureml-models/
+outputs/
+logs/
