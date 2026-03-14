@@ -107,6 +107,33 @@ The trained LightGBM model generates real predictions for the next 90 days beyon
 
 ![2017 Revenue + Forecast](screenshots/forecast_vs_actuals_2017.png)
 
+### Model Accuracy
+
+The model was validated on a 90-day holdout (May 18 — Aug 15, 2017) that was never seen during training.
+
+| Level | Metric | Value | Interpretation |
+|-------|--------|-------|----------------|
+| **Daily Totals** | MAPE | **3.47%** | Off by ~3.5% on any given day |
+| **Weekly Totals** | MAPE | **1.64%** | Nearly perfect at weekly planning level |
+| **Daily Totals** | R² | 0.9387 | Captures 94% of daily variance |
+| **Weekly Totals** | R² | 0.9910 | Captures 99% of weekly variance |
+| Row-level | R² | 0.9707 | 97% of individual prediction variance |
+| Daily avg | Predicted vs Actual | 860K vs 855K | Only 0.6% difference |
+
+**By product category:**
+
+| Category | R² | Notes |
+|----------|-----|-------|
+| Grocery | 0.96 | Dominant category — excellent accuracy |
+| Fresh | 0.97 | Strong seasonal patterns captured |
+| Bakery | 0.90 | Reliable predictions |
+| Personal Care | 0.90 | Consistent demand |
+| Household | 0.85 | Good accuracy |
+| Frozen | 0.66 | Moderate — smaller volume |
+| Apparel, Electronics | < 0 | Model struggles with sporadic, low-volume categories |
+
+High-volume categories (Grocery, Fresh, Bakery) account for ~80% of total revenue and all have R² > 0.90. Low-volume categories like Electronics and Apparel are inherently harder to predict due to sporadic purchasing patterns.
+
 ### Residual Analysis
 
 ![Residual Analysis](screenshots/residual_analysis.png)

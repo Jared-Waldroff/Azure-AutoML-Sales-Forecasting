@@ -210,6 +210,34 @@ elif page == "Model Results":
         st.image(str(PROJECT_ROOT / "screenshots" / "feature_importance.png"),
                  caption="Feature Importance (LightGBM)")
 
+    # --- Model Accuracy ---
+    st.markdown("### Model Accuracy (90-Day Holdout Validation)")
+    st.markdown("The model was tested on 90 days of real data it never saw during training.")
+
+    acc_col1, acc_col2, acc_col3, acc_col4 = st.columns(4)
+    acc_col1.metric("Daily MAPE", "3.47%", help="Average daily forecast error")
+    acc_col2.metric("Weekly MAPE", "1.64%", help="Average weekly forecast error")
+    acc_col3.metric("Daily R²", "0.9387", help="Variance explained at daily level")
+    acc_col4.metric("Weekly R²", "0.9910", help="Variance explained at weekly level")
+
+    st.markdown("**Accuracy by product category:**")
+    cat_accuracy = pd.DataFrame({
+        "Category": ["Grocery", "Fresh", "Bakery", "Personal Care", "Household", "Frozen", "Beverages", "Seasonal", "Apparel", "Electronics", "Other"],
+        "R²": [0.9597, 0.9687, 0.9013, 0.9003, 0.8503, 0.6643, 0.5021, 0.4915, -2.1471, -3.2469, -2.8750],
+        "MAE (units)": [290.4, 102.5, 83.8, 29.4, 82.7, 40.5, 50.0, 16.7, 10.3, 11.1, 9.2],
+    })
+    cat_accuracy = cat_accuracy.sort_values("R²", ascending=False)
+
+    fig = px.bar(cat_accuracy, x="R²", y="Category", orientation="h",
+                  title="Prediction Accuracy by Category (R² — higher is better)",
+                  color="R²", color_continuous_scale=["#DC2626", "#F59E0B", "#059669"],
+                  range_color=[-1, 1])
+    fig.update_layout(height=400, template="plotly_white")
+    st.plotly_chart(fig, use_container_width=True)
+    st.caption("High-volume categories (Grocery, Fresh, Bakery) have R² > 0.90 and account for ~80% of revenue. Low-volume categories like Electronics and Apparel are inherently harder to predict due to sporadic purchasing patterns.")
+
+    st.markdown("---")
+
     # --- Azure AutoML Results ---
     st.markdown("### Azure AutoML Results")
     azure_data = {
